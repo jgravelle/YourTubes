@@ -7,6 +7,10 @@ from datetime import datetime, timedelta
 import requests
 from PIL import Image
 from io import BytesIO
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Set up YouTube API client
 API_SERVICE_NAME = "youtube"
@@ -23,7 +27,7 @@ config = load_config()
 # Authenticate and create YouTube API client
 def get_authenticated_service():
     return googleapiclient.discovery.build(
-        API_SERVICE_NAME, API_VERSION, developerKey=config['API_KEY'])
+        API_SERVICE_NAME, API_VERSION, developerKey=os.getenv('YOUTUBE_API_KEY'))
 
 youtube = get_authenticated_service()
 
