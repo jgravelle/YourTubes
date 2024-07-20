@@ -9,6 +9,7 @@ from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
 import base64
+import pickle
 
 # Load environment variables
 load_dotenv()
@@ -22,17 +23,27 @@ SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 def load_config():
     default_config = {
         "channels": [],
-        "keywords": []
+        "keywords": [],
+        "channel_ids": {}  # New field to store channel IDs
     }
     try:
         with open('config.json', 'r') as config_file:
-            return json.load(config_file)
+            config = json.load(config_file)
+            # Ensure the new field exists
+            if 'channel_ids' not in config:
+                config['channel_ids'] = {}
+            return config
     except FileNotFoundError:
         with open('config.json', 'w') as config_file:
             json.dump(default_config, config_file)
         return default_config
 
 config = load_config()
+
+# Save configuration
+def save_config():
+    with open('config.json', 'w') as config_file:
+        json.dump(config, config_file)
 
 # Authenticate and create YouTube API client
 def get_authenticated_service():
@@ -43,9 +54,13 @@ youtube = get_authenticated_service()
 
 # Function to get channel ID from channel URL
 def get_channel_id(channel_url):
+    # Check if we have the channel ID cached
+    if channel_url in config['channel_ids']:
+        return config['channel_ids'][channel_url]
+
     try:
         if '/channel/' in channel_url:
-            return channel_url.split('/channel/')[1]
+            channel_id = channel_url.split('/channel/')[1]
         elif '/user/' in channel_url or '/c/' in channel_url or '@' in channel_url:
             username = channel_url.split('/')[-1]
             if username.startswith('@'):
@@ -58,9 +73,18 @@ def get_channel_id(channel_url):
             )
             response = request.execute()
             if response['items']:
-                return response['items'][0]['snippet']['channelId']
-        st.error(f"Could not get channel ID for URL: {channel_url}")
-        return None
+                channel_id = response['items'][0]['snippet']['channelId']
+            else:
+                st.error(f"Could not get channel ID for URL: {channel_url}")
+                return None
+        else:
+            st.error(f"Invalid channel URL format: {channel_url}")
+            return None
+
+        # Cache the channel ID
+        config['channel_ids'][channel_url] = channel_id
+        save_config()
+        return channel_id
     except Exception as e:
         st.error(f"An error occurred while getting channel ID: {e}")
         return None
@@ -88,8 +112,8 @@ def filter_relevant_content(videos, keywords):
                                              for keyword in keywords)]
 
 # Cache videos
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_cached_videos(channels, max_results=10, keywords=None):
+@st.cache_data(ttl=86400)  # Cache for 24 hours
+def get_cached_videos(channels, max_results=5, keywords=None):
     all_videos = []
     for channel in channels:
         channel_id = get_channel_id(channel)
@@ -115,7 +139,7 @@ def main():
     keywords = st.sidebar.text_input("Enter keywords for filtering (comma-separated)", value=",".join(config['keywords']))
     keywords = [keyword.strip() for keyword in keywords.split(',') if keyword.strip()]
 
-    max_results = st.sidebar.slider("Max videos per channel", 1, 50, 10)
+    max_results = st.sidebar.slider("Max videos per channel", 1, 50, 5)
 
     if st.sidebar.button("Save Configuration"):
         config['channels'] = channels
