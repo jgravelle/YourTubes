@@ -8,6 +8,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -137,10 +138,32 @@ def main():
             thumbnail_url = video['snippet']['thumbnails']['medium']['url']
             response = requests.get(thumbnail_url)
             img = Image.open(BytesIO(response.content))
-            st.image(img, use_column_width=True)
+            
+            # Convert image to base64
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            # Create clickable image
+            html = f'<img src="data:image/png;base64,{img_str}" style="width:100%;cursor:pointer" onclick="showVideo(\'{video["id"]["videoId"]}\')">'
+            st.markdown(html, unsafe_allow_html=True)
+            
             st.write(f"**{video['snippet']['title']}**")
             st.write(f"Published: {video['snippet']['publishedAt']}")
-            st.write(f"[Watch Video](https://www.youtube.com/watch?v={video['id']['videoId']})")
+
+    # JavaScript to handle click and show video
+    js = """
+    <script>
+    function showVideo(videoId) {
+        const videoElement = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+        document.getElementById('video-container').innerHTML = videoElement;
+    }
+    </script>
+    """
+    st.markdown(js, unsafe_allow_html=True)
+
+    # Container for displaying the selected video
+    st.markdown('<div id="video-container"></div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
