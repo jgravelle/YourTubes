@@ -103,7 +103,8 @@ def get_cached_videos(channels, max_results=10, keywords=None):
 
 # Streamlit app
 def main():
-    st.title("YouTube Channel Monitor")
+    st.title("YourTubes™")
+    st.write(" - Your Personalized YouTube™ Feed")
 
     # Sidebar for configuration
     st.sidebar.header("Configuration")
