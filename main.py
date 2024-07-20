@@ -131,39 +131,20 @@ def main():
 
     videos = get_cached_videos(channels, max_results, keywords)
 
+    # Create a placeholder for the video player
+    video_placeholder = st.empty()
+
     # Display videos in a grid
     cols = st.columns(3)
     for i, video in enumerate(videos):
         with cols[i % 3]:
             thumbnail_url = video['snippet']['thumbnails']['medium']['url']
-            response = requests.get(thumbnail_url)
-            img = Image.open(BytesIO(response.content))
-            
-            # Convert image to base64
-            buffered = BytesIO()
-            img.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            # Create clickable image
-            html = f'<img src="data:image/png;base64,{img_str}" style="width:100%;cursor:pointer" onclick="showVideo(\'{video["id"]["videoId"]}\')">'
-            st.markdown(html, unsafe_allow_html=True)
-            
+            st.image(thumbnail_url, use_column_width=True)
             st.write(f"**{video['snippet']['title']}**")
             st.write(f"Published: {video['snippet']['publishedAt']}")
-
-    # JavaScript to handle click and show video
-    js = """
-    <script>
-    function showVideo(videoId) {
-        const videoElement = `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
-        document.getElementById('video-container').innerHTML = videoElement;
-    }
-    </script>
-    """
-    st.markdown(js, unsafe_allow_html=True)
-
-    # Container for displaying the selected video
-    st.markdown('<div id="video-container"></div>', unsafe_allow_html=True)
+            if st.button(f"Play Video {i+1}"):
+                video_id = video['id']['videoId']
+                video_placeholder.markdown(f'<iframe width="100%" height="315" src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
