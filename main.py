@@ -139,7 +139,7 @@ def main():
     keywords = st.sidebar.text_input("Enter keywords for filtering (comma-separated)", value=",".join(config['keywords']))
     keywords = [keyword.strip() for keyword in keywords.split(',') if keyword.strip()]
 
-    max_results = st.sidebar.slider("Max videos per channel", 1, 50, 5)
+    max_results = 1
 
     if st.sidebar.button("Save Configuration"):
         config['channels'] = channels
