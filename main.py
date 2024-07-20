@@ -42,11 +42,27 @@ youtube = get_authenticated_service()
 
 # Function to get channel ID from channel URL
 def get_channel_id(channel_url):
-    response = requests.get(channel_url)
-    if response.status_code == 200:
-        channel_id = response.text.split('"channelId":"')[1].split('"')[0]
-        return channel_id
-    return None
+    try:
+        if '/channel/' in channel_url:
+            return channel_url.split('/channel/')[1]
+        elif '/user/' in channel_url or '/c/' in channel_url or '@' in channel_url:
+            username = channel_url.split('/')[-1]
+            if username.startswith('@'):
+                username = username[1:]  # Remove '@' if present
+            request = youtube.search().list(
+                part="snippet",
+                type="channel",
+                q=username,
+                maxResults=1
+            )
+            response = request.execute()
+            if response['items']:
+                return response['items'][0]['snippet']['channelId']
+        st.error(f"Could not get channel ID for URL: {channel_url}")
+        return None
+    except Exception as e:
+        st.error(f"An error occurred while getting channel ID: {e}")
+        return None
 
 # Function to fetch latest videos from a channel
 def fetch_latest_videos(channel_id, max_results=10):
@@ -81,6 +97,8 @@ def get_cached_videos(channels, max_results=10, keywords=None):
             if keywords:
                 videos = filter_relevant_content(videos, keywords)
             all_videos.extend(videos)
+        else:
+            st.warning(f"Skipping channel: {channel} - Could not get channel ID")
     return sorted(all_videos, key=lambda x: x['snippet']['publishedAt'], reverse=True)
 
 # Streamlit app
