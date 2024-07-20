@@ -135,16 +135,21 @@ def main():
     video_placeholder = st.empty()
 
     # Display videos in a grid
-    cols = st.columns(3)
-    for i, video in enumerate(videos):
-        with cols[i % 3]:
-            thumbnail_url = video['snippet']['thumbnails']['medium']['url']
-            st.image(thumbnail_url, use_column_width=True)
-            st.write(f"**{video['snippet']['title']}**")
-            st.write(f"Published: {video['snippet']['publishedAt']}")
-            if st.button(f"Play Video {i+1}"):
-                video_id = video['id']['videoId']
-                video_placeholder.markdown(f'<iframe width="100%" height="315" src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe>', unsafe_allow_html=True)
+    for i in range(0, len(videos), 3):
+        cols = st.columns(3)
+        for j in range(3):
+            if i + j < len(videos):
+                video = videos[i + j]
+                with cols[j]:
+                    with st.container():
+                        thumbnail_url = video['snippet']['thumbnails']['medium']['url']
+                        st.image(thumbnail_url, use_column_width=True)
+                        title = video['snippet']['title']
+                        st.markdown(f"**{title[:50]}{'...' if len(title) > 50 else ''}**")
+                        st.write(f"Published: {video['snippet']['publishedAt'][:10]}")
+                        if st.button(f"Play Video {i+j+1}"):
+                            video_id = video['id']['videoId']
+                            video_placeholder.markdown(f'<iframe width="100%" height="315" src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
