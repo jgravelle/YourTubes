@@ -19,8 +19,17 @@ SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
 # Load configuration
 def load_config():
-    with open('config.json') as config_file:
-        return json.load(config_file)
+    default_config = {
+        "channels": [],
+        "keywords": []
+    }
+    try:
+        with open('config.json', 'r') as config_file:
+            return json.load(config_file)
+    except FileNotFoundError:
+        with open('config.json', 'w') as config_file:
+            json.dump(default_config, config_file)
+        return default_config
 
 config = load_config()
 
